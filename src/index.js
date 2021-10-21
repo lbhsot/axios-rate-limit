@@ -120,6 +120,7 @@ AxiosRateLimit.prototype.shift = function () {
   }
   var queued = this.queue.shift()
   queued.resolve()
+  console.log(Date.now(), queued)
 
   if (this.timeslotRequests === 0) {
     this.timeoutId = setTimeout(function () {
