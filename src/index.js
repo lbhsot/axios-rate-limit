@@ -106,6 +106,16 @@ AxiosRateLimit.prototype.shiftInitial = function () {
   setTimeout(function () { return this.shift() }.bind(this), 0)
 }
 
+function nowTime () {
+  var m = new Date()
+  return m.getUTCFullYear() + '/' +
+      ('0' + (m.getUTCMonth() + 1)).slice(-2) + '/' +
+      ('0' + m.getUTCDate()).slice(-2) + ' ' +
+      ('0' + m.getUTCHours()).slice(-2) + ':' +
+      ('0' + m.getUTCMinutes()).slice(-2) + ':' +
+      ('0' + m.getUTCSeconds()).slice(-2)
+}
+
 AxiosRateLimit.prototype.shift = function () {
   if (!this.queue.length) return
   if (this.timeslotRequests === this.maxRequests) {
@@ -120,7 +130,7 @@ AxiosRateLimit.prototype.shift = function () {
   }
   var queued = this.queue.shift()
   queued.resolve()
-  console.log(Date.now(), queued)
+  console.log(nowTime(), queued)
 
   if (this.timeslotRequests === 0) {
     this.timeoutId = setTimeout(function () {
