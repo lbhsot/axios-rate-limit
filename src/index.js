@@ -1,5 +1,7 @@
 function AxiosRateLimit (axios) {
   this.queue = []
+  this.configQueue = []
+  this.debounceRequest = false
   this.timeslotRequests = 0
 
   this.interceptors = {
@@ -11,6 +13,23 @@ function AxiosRateLimit (axios) {
   this.handleResponse = this.handleResponse.bind(this)
 
   this.enable(axios)
+}
+
+function deepEqual (x, y) {
+  if (x === y) return true
+  if ((typeof x === 'object' && x !== null) &&
+      (typeof y === 'object' && y !== null)) {
+    if (Object.keys(x).length !== Object.keys(y).length) return false
+    for (var prop in x) {
+      if (y.hasOwnProperty(prop)) {
+        if (!deepEqual(x[prop], y[prop])) return false
+      } else {
+        return false
+      }
+    }
+    return true
+  }
+  return false
 }
 
 AxiosRateLimit.prototype.getMaxRPS = function () {
@@ -26,6 +45,9 @@ AxiosRateLimit.prototype.setMaxRPS = function (rps) {
 }
 
 AxiosRateLimit.prototype.setRateLimitOptions = function (options) {
+  if (options.debounceRequest !== undefined) {
+    this.debounceRequest = options.debounceRequest
+  }
   if (options.maxRPS) {
     this.setMaxRPS(options.maxRPS)
   } else {
@@ -49,9 +71,24 @@ AxiosRateLimit.prototype.enable = function (axios) {
   )
 }
 
-AxiosRateLimit.prototype.handleRequest = function (request) {
+AxiosRateLimit.prototype.handleRequest = function (config) {
   return new Promise(function (resolve) {
-    this.push({ resolve: function () { resolve(request) } })
+    if (this.debounceRequest) {
+      var find = false
+      // eslint-disable-next-line es5/no-for-of
+      for (var cur of this.configQueue) {
+        if (deepEqual(cur, config)) {
+          find = true
+          break
+        }
+      }
+      if (!find) {
+        this.configQueue.push(config)
+        this.push({ resolve: function () { resolve(config) } })
+      }
+    } else {
+      this.push({ resolve: function () { resolve(config) } })
+    }
   }.bind(this))
 }
 
@@ -75,10 +112,12 @@ AxiosRateLimit.prototype.shift = function () {
     if (this.timeoutId && typeof this.timeoutId.ref === 'function') {
       this.timeoutId.ref()
     }
-
     return
   }
 
+  if (this.debounceRequest) {
+    this.configQueue.shift()
+  }
   var queued = this.queue.shift()
   queued.resolve()
 

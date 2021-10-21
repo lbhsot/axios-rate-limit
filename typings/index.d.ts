@@ -12,7 +12,12 @@ export interface RateLimitedAxiosInstance extends AxiosInstance {
    // shift():any
 }
 
-type rateLimitOptions = { maxRequests?: number, perMilliseconds?: number, maxRPS?:number };
+type rateLimitOptions = {
+  maxRequests?: number,
+  perMilliseconds?: number,
+  maxRPS?:number,
+  debounceRequest?: boolean,
+};
 
  /**
   * Apply rate limit to axios instance.
